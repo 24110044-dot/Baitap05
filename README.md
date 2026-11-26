@@ -173,3 +173,116 @@ Kiểm thử ứng dụng dùng database H2 riêng trong `src/test/resources`; c
 nghiệp vụ, JSP/JSTL, xác thực, CRUD, upload và phục vụ ảnh. Kiểm thử kết nối SQL Server
 thật bị bỏ qua mặc định; xem [HELP.md](./HELP.md) để bật riêng kiểm thử tích hợp chỉ đọc.
 
+## Báo cáo kiểm tra dự án
+
+**Ngày kiểm tra:** 26/11/2026
+
+**Phạm vi:** Đối chiếu cấu hình, Controller, Service, Repository, Entity, JSP/JSTL,
+Spring Security và test hiện có. Không chỉnh sửa schema hoặc dữ liệu database trong quá trình audit.
+
+### 1. Kết quả theo yêu cầu
+
+| Yêu cầu | Đánh giá | Bằng chứng |
+|---|---|---|
+| JSP/JSTL trên Spring Boot 4.1.2 | **Đạt** | `pom.xml` khai báo Spring Boot 4.1.2, WAR, Tomcat Jasper, JSTL API và implementation. `application.properties` cấu hình view prefix/suffix và UTF-8. HTTP tests khởi động Tomcat, render JSP/JSTL và kiểm tra nội dung/charset. |
+| Tìm kiếm, lọc và phân trang | **Đạt theo code và test H2** | Category tìm theo tên, không phân biệt hoa thường. User tìm theo username/email/full name, lọc role/status. Dùng Spring Data `Page`/`Pageable`; page size được giới hạn từ 5 đến 50. |
+| Đăng ký, Login, Logout bằng Spring Security | **Đạt theo code và HTTP tests** | Public registration tạo role USER, kiểm tra dữ liệu và BCrypt password. Login chặn tài khoản inactive, điều hướng theo role. Logout POST invalidate session và xóa Authentication. CSRF đang bật theo cấu hình mặc định; các form POST có token. |
+| CRUD Category/User chỉ dành cho Admin | **Đạt theo code và HTTP tests** | Toàn bộ `/admin/**` yêu cầu `ROLE_ADMIN`. Có danh sách, tạo, sửa, xóa; kiểm tra validation/unique; không cho vô hiệu hóa hoặc xóa Admin hoạt động cuối cùng. HTTP test xác nhận USER nhận 403 khi truy cập `/admin/categories`. |
+
+### 2. Controller, URL và HTTP method
+
+| Method | URL | Quyền / chức năng |
+|---|---|---|
+| GET | `/` | Chuyển khách sang login; chuyển người dùng đã đăng nhập theo role |
+| GET | `/login` | Form đăng nhập |
+| POST | `/login` | Spring Security xác thực đăng nhập |
+| GET | `/register` | Form đăng ký |
+| POST | `/register` | Tạo tài khoản USER |
+| POST | `/logout` | Đăng xuất, yêu cầu CSRF token |
+| GET | `/admin/dashboard` | Dashboard Admin |
+| GET | `/user/dashboard` | Trang chủ User, chỉ liệt kê Category Active |
+| GET | `/admin/categories` | Danh sách/tìm kiếm/phân trang Category |
+| GET | `/admin/categories/create` | Form tạo Category |
+| POST | `/admin/categories/store` | Tạo Category |
+| GET | `/admin/categories/edit/{id}` | Form sửa Category |
+| POST | `/admin/categories/update/{id}` | Cập nhật Category |
+| POST | `/admin/categories/delete/{id}` | Xóa Category |
+| GET | `/admin/users` | Danh sách/tìm kiếm/lọc/phân trang User |
+| GET | `/admin/users/create` | Form tạo User |
+| POST | `/admin/users/store` | Tạo User |
+| GET | `/admin/users/edit/{id}` | Form sửa User |
+| POST | `/admin/users/update/{id}` | Cập nhật User |
+| POST | `/admin/users/delete/{id}` | Xóa User |
+
+Category list nhận `keyword`, `page`, `size`. User list nhận thêm `role`, `status`.
+Các link phân trang giữ điều kiện tìm kiếm/lọc hiện tại. Các thao tác xóa dùng POST và
+có xác nhận phía trình duyệt.
+
+### 3. Bảo mật và dữ liệu
+
+- `SecurityConfig` dùng BCryptPasswordEncoder, custom UserDetailsService, role-based access,
+  session fixation protection, session cookie HttpOnly/SameSite và logout invalidate session.
+- CSRF không bị tắt; các form đăng ký, login, logout và CRUD gửi `_csrf`.
+- Test xác minh đăng ký lưu hash BCrypt thay vì plaintext, tài khoản inactive không login,
+  đăng ký không cấp ADMIN và USER không truy cập Category Admin.
+- Category/User Entity ánh xạ các cột hiện có. `spring.jpa.hibernate.ddl-auto=validate`;
+  audit không chạy migration, không tạo/xóa bảng và không thay đổi schema.
+
+### 4. Kết quả kiểm thử
+
+Lệnh bắt buộc:
+
+```powershell
+.\mvnw.cmd clean test package
+```
+
+Kết quả: **BUILD SUCCESS**. Có 11 test trong lượt chạy mặc định: 10 pass, 0 fail,
+1 skipped (`SqlServerJdbcIntegrationTest`, do test này yêu cầu bật riêng).
+H2 test cover service tìm kiếm/phân trang, BCrypt, bảo vệ Admin cuối cùng, HTTP login/logout,
+403 cho USER, CRUD, render JSP/JSTL và upload/serve ảnh Category. Đây là kết quả H2,
+không tự nó chứng minh kết nối SQL Server.
+
+Đã chạy riêng kiểm thử JDBC tích hợp bằng Windows Authentication:
+
+```powershell
+$authDir = Join-Path $env:USERPROFILE '.m2\repository\com\microsoft\sqlserver\mssql-jdbc_auth\13.4.0.x64'
+$env:PATH = "$authDir;$env:PATH"
+.\mvnw.cmd '-Dsqlserver.integration=true' '-Dtest=SqlServerJdbcIntegrationTest' test
+```
+
+Kết quả: **BUILD SUCCESS, 1 test pass, 0 fail, 0 skipped**. Kiểm thử kết nối trực tiếp
+đến `CategoryManagementDB`, chạy `SELECT 1`, đọc số dòng hai bảng hiện có bằng JDBC và
+đối chiếu kết quả với JPA. Hibernate xác nhận SQL Server 16.0 và schema `dbo`.
+Đây là phép xác minh kết nối thật trong môi trường tại thời điểm kiểm tra; test chỉ đọc,
+không ghi dữ liệu hoặc thay đổi schema.
+
+### 5. Yêu cầu chưa hoàn thành và giới hạn kiểm tra
+
+Không phát hiện yêu cầu chức năng chính nào trong bốn nhóm bị thiếu khi đối chiếu code và test.
+Các điểm sau chưa được khẳng định bởi bộ test hiện tại:
+
+- Chưa có test riêng xác nhận server trả 403 với CSRF token thiếu/sai; test HTTP hiện gửi token
+  hợp lệ cho các POST.
+- Phân trang/tìm kiếm được kiểm chứng bằng H2 service test; chưa có kiểm thử truy vấn phân trang
+  và tìm kiếm trên SQL Server thật.
+- Chưa kiểm thử trực quan mọi trang trên các kích thước desktop/tablet/mobile hoặc trong một
+  deployment ngoài Tomcat nhúng.
+- URL ảnh bên ngoài phụ thuộc máy chủ ảnh và quyền truy cập của trình duyệt; JDBC integration
+  không xác minh các URL ngoài này.
+
+Đây là giới hạn xác minh thủ công/kiểm thử, không phải kết luận rằng các chức năng trên đang lỗi.
+
+### 6. Chức năng nên kiểm tra thủ công trước khi báo cáo/demo
+
+1. Trên SQL Server thật, đăng nhập bằng Admin và User hiện có; xác nhận route dashboard theo role.
+2. Thử User truy cập trực tiếp từng `/admin/categories/**` và `/admin/users/**`; xác nhận bị từ chối.
+3. Với dữ liệu SQL Server, thử tìm kiếm, lọc, đổi page size và chuyển trang ở cả hai danh sách.
+4. Thử thêm/sửa/xóa Category/User, gồm tên/email trùng, form không hợp lệ và bảo vệ Admin cuối cùng.
+5. Gửi POST thiếu CSRF token để xác nhận request bị từ chối; không dùng thao tác này để thay đổi dữ liệu.
+6. Xác nhận upload/URL ảnh và thư mục lưu `APP_UPLOAD_DIRECTORY` có quyền ghi/backup trong môi trường chạy.
+7. Kiểm tra hiển thị tiếng Việt và bố cục trên trình duyệt/thiết bị mục tiêu.
+
+**Đánh giá cuối:** Bốn yêu cầu chính được triển khai theo code và test; build package thành công.
+JSP/JSTL đã được render qua HTTP test. Kết nối SQL Server thật cũng đã được kiểm chứng riêng bằng
+JDBC read-only integration test trong lượt audit này. Không có thay đổi schema database.
+
