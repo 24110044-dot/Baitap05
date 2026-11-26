@@ -1,0 +1,17 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Spring Boot-Bt05Application<bt05>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.example.bt05.Bt05Application",
+            "projectName": "bt05",
+            "args": "",
+            "env": {
+                "PATH": "${env:USERPROFILE}\\.m2\\repository\\com\\microsoft\\sqlserver\\mssql-jdbc_auth\\13.4.0.x64;${env:PATH}"
+            },
+            "envFile": "${workspaceFolder}/.env"
+        }
+    ]
+}
