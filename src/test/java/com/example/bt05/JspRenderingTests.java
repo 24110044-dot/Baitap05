@@ -117,9 +117,20 @@ class JspRenderingTests {
 		assertThat(successfulLogin.statusCode()).isEqualTo(302);
 		assertThat(successfulLogin.headers().firstValue("location").orElse("")).endsWith("/user/dashboard");
 
+		Category visibleCategory = new Category();
+		visibleCategory.setCategoryName("Homepage visible category");
+		visibleCategory.setImages("https://example.com/visible.png");
+		visibleCategory.setStatus(true);
+		categories.saveAndFlush(visibleCategory);
+		Category hiddenCategory = new Category();
+		hiddenCategory.setCategoryName("Homepage hidden category");
+		hiddenCategory.setStatus(false);
+		categories.saveAndFlush(hiddenCategory);
+
 		HttpResponse<String> userPage = send(client, "GET", "/user/dashboard", null);
 		assertThat(userPage.statusCode()).isEqualTo(200);
-		assertThat(userPage.body()).contains("Trang dành cho User");
+		assertThat(userPage.body()).contains("Trang chủ", "Homepage visible category", "https://example.com/visible.png");
+		assertThat(userPage.body()).doesNotContain("Homepage hidden category");
 		assertThat(send(client, "GET", "/admin/categories", null).statusCode()).isEqualTo(403);
 
 		HttpResponse<String> logout = send(client, "POST", "/logout", form(Map.of(
@@ -127,6 +138,7 @@ class JspRenderingTests {
 		assertThat(logout.statusCode()).isEqualTo(302);
 		assertThat(logout.headers().firstValue("location").orElse("")).contains("/login?logout");
 		assertThat(send(client, "GET", "/user/dashboard", null).statusCode()).isEqualTo(302);
+		categories.deleteAll(java.util.List.of(visibleCategory, hiddenCategory));
 	}
 
 	@Test

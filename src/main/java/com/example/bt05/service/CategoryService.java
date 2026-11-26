@@ -27,6 +27,17 @@ public class CategoryService {
 	}
 
 	@Transactional(readOnly = true)
+	public Page<Category> visibleCategories(int page, int size) {
+		return categories.findByStatusTrue(
+				PageRequest.of(Math.max(page, 0), normalizeSize(size), Sort.by("categoryId").descending()));
+	}
+
+	@Transactional(readOnly = true)
+	public long count() {
+		return categories.count();
+	}
+
+	@Transactional(readOnly = true)
 	public Category get(Integer id) {
 		return categories.findById(id).orElseThrow(() -> new IllegalArgumentException("Không tìm thấy danh mục."));
 	}

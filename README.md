@@ -101,6 +101,7 @@ có thể đổi thư mục bằng `APP_UPLOAD_DIRECTORY`. Cột `Categories.ima
 - Đăng nhập kiểm tra tài khoản và trạng thái hoạt động; tài khoản bị khóa không đăng nhập được.
 - Đăng nhập chuyển hướng Admin/User theo role.
 - Đăng xuất bằng POST, xóa Authentication và invalidate session; form giữ CSRF token.
+- Sau khi đăng nhập, User được chuyển đến trang chủ danh mục.
 
 ### Quản lý Category (chỉ Admin)
 
@@ -109,6 +110,8 @@ có thể đổi thư mục bằng `APP_UPLOAD_DIRECTORY`. Cột `Categories.ima
 - Kiểm tra tên bắt buộc, tối đa 50 ký tự và không trùng.
 - Giữ nguyên `CreatedAt` khi cập nhật.
 - Ảnh hiển thị dưới dạng icon; hỗ trợ URL hoặc tải ảnh từ máy.
+- Trạng thái Category bật (Active) sẽ hiển thị trên trang chủ User; Category tắt (Inactive)
+  vẫn được lưu trong hệ thống nhưng không xuất hiện với User.
 
 ### Quản lý User (chỉ Admin)
 
@@ -129,7 +132,7 @@ có thể đổi thư mục bằng `APP_UPLOAD_DIRECTORY`. Cột `Categories.ima
 | POST | `/login` | Xác thực đăng nhập qua Spring Security |
 | POST | `/logout` | Đăng xuất |
 | GET | `/admin/dashboard` | Dashboard Admin |
-| GET | `/user/dashboard` | Khu vực User |
+| GET | `/user/dashboard` | Trang chủ User, hiển thị Category đang Active |
 | GET | `/admin/categories` | Danh sách, tìm kiếm, phân trang Category |
 | GET | `/admin/categories/create` | Form thêm Category |
 | POST | `/admin/categories/store` | Lưu Category |

@@ -976,6 +976,60 @@ h6 {
 	border-color: rgba(168, 85, 247, .26);
 }
 
+.category-home-card {
+	min-height: 100%;
+}
+
+.category-home-image,
+.category-home-image-placeholder {
+	display: grid;
+	width: 100%;
+	height: 170px;
+	place-items: center;
+	border-bottom: 1px solid rgba(168, 85, 247, .22);
+	background: linear-gradient(145deg, rgba(168, 85, 247, .12), rgba(20, 241, 217, .06));
+	color: var(--cyber-teal);
+}
+
+.category-home-image {
+	max-width: 100%;
+	min-width: 0;
+	padding: 10px;
+	object-fit: contain;
+}
+
+.category-home-image-placeholder i {
+	font-size: 2rem;
+	text-shadow: 0 0 18px rgba(20, 241, 217, .3);
+}
+
+.category-home-card .card-body {
+	padding: 18px 20px 20px;
+}
+
+.category-home-label {
+	color: var(--cyber-teal);
+	font-size: .62rem;
+	font-weight: 700;
+	letter-spacing: .16em;
+}
+
+.category-home-title {
+	margin: 6px 0 0;
+	font-size: 1rem;
+	overflow-wrap: anywhere;
+}
+
+.category-home-empty {
+	max-width: 640px;
+	margin: 24px auto;
+	text-align: center;
+}
+
+.category-home-empty .stat-icon {
+	margin: 0 auto;
+}
+
 .text-break {
 	max-width: 240px;
 	overflow-wrap: anywhere;
